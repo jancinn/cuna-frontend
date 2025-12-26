@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { useNavigate } from 'react-router-dom';
+import ServidoraHeader from './ServidoraHeader';
 
 // --- COMPONENTES UI ---
 
