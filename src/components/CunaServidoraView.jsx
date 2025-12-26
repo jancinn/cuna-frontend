@@ -166,24 +166,32 @@ export default function CunaServidoraView() {
     const [calendarEvents, setCalendarEvents] = useState({}); // { '2025-12-26': 'mine' }
     const [activeTab, setActiveTab] = useState('inicio');
 
+    const [error, setError] = useState(null);
+
     useEffect(() => {
         const loadData = async () => {
             try {
-                if (!supabase) return;
+                if (!supabase) throw new Error("Supabase client not initialized");
 
                 // 1. Obtener usuario
-                const { data: { user } } = await supabase.auth.getUser();
+                const { data: { user }, error: authError } = await supabase.auth.getUser();
+                if (authError) throw authError;
                 if (!user) {
                     navigate('/login');
                     return;
                 }
 
                 // 2. Obtener perfil
-                const { data: profile } = await supabase
+                const { data: profile, error: profileError } = await supabase
                     .from('cuna_trabajadores')
                     .select('nombre, apellido, rol')
                     .eq('usuario_id', user.id)
                     .single();
+
+                if (profileError && profileError.code !== 'PGRST116') {
+                    // Ignoramos error si no encuentra perfil (PGRST116), usamos email
+                    console.warn("Perfil no encontrado", profileError);
+                }
 
                 const userName = profile?.nombre
                     ? `${profile.nombre} ${profile.apellido || ''}`
@@ -193,7 +201,7 @@ export default function CunaServidoraView() {
 
                 // 3. Obtener calendario y turnos
                 const today = new Date().toISOString().split('T')[0];
-                const { data: calendarData, error } = await supabase
+                const { data: calendarData, error: calendarError } = await supabase
                     .from('cuna_calendario')
                     .select(`
                         id,
@@ -209,36 +217,41 @@ export default function CunaServidoraView() {
                     .gte('fecha', today)
                     .order('fecha', { ascending: true });
 
-                if (error) throw error;
+                if (calendarError) throw calendarError;
 
                 // 4. Procesar datos
                 const myShifts = [];
                 const eventsMap = {};
 
-                calendarData?.forEach(day => {
-                    // Buscar mi turno
-                    const myTurn = day.cuna_turnos?.find(t => t.trabajador_id === user.id && (t.estado === 'asignado' || t.estado === 'confirmado'));
+                if (calendarData) {
+                    calendarData.forEach(day => {
+                        if (!day.cuna_turnos) return; // Skip si no hay turnos array
 
-                    // Buscar oportunidades (solicitudes de cambio de otros)
-                    const opportunity = day.cuna_turnos?.find(t => t.estado === 'solicitud_cambio' && t.trabajador_id !== user.id);
+                        // Buscar mi turno
+                        const myTurn = day.cuna_turnos.find(t => t.trabajador_id === user.id && (t.estado === 'asignado' || t.estado === 'confirmado'));
 
-                    if (myTurn) {
-                        myShifts.push({
-                            id: myTurn.id,
-                            fecha: day.fecha,
-                            companero: "Compañera de equipo"
-                        });
-                        eventsMap[day.fecha] = 'mine';
-                    } else if (opportunity) {
-                        eventsMap[day.fecha] = 'available';
-                    }
-                });
+                        // Buscar oportunidades (solicitudes de cambio de otros)
+                        const opportunity = day.cuna_turnos.find(t => t.estado === 'solicitud_cambio' && t.trabajador_id !== user.id);
+
+                        if (myTurn) {
+                            myShifts.push({
+                                id: myTurn.id,
+                                fecha: day.fecha,
+                                companero: "Compañera de equipo"
+                            });
+                            eventsMap[day.fecha] = 'mine';
+                        } else if (opportunity) {
+                            eventsMap[day.fecha] = 'available';
+                        }
+                    });
+                }
 
                 setNextShifts(myShifts.slice(0, 2));
                 setCalendarEvents(eventsMap);
 
             } catch (err) {
-                console.error("Error cargando datos:", err);
+                console.error("CRITICAL ERROR:", err);
+                setError(err.message || JSON.stringify(err));
             } finally {
                 setLoading(false);
             }
@@ -253,6 +266,22 @@ export default function CunaServidoraView() {
         return (
             <div className="min-h-screen flex items-center justify-center bg-[#0a192f]">
                 <Loader2 className="animate-spin text-teal-500" size={32} />
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center bg-[#0a192f] text-white p-8">
+                <AlertCircle className="text-red-500 mb-4" size={48} />
+                <h1 className="text-2xl font-bold mb-2">Algo salió mal</h1>
+                <p className="text-slate-400 mb-4 text-center max-w-md">{error}</p>
+                <button
+                    onClick={() => window.location.reload()}
+                    className="px-4 py-2 bg-teal-600 rounded-lg font-bold hover:bg-teal-500 transition-colors"
+                >
+                    Reintentar
+                </button>
             </div>
         );
     }
