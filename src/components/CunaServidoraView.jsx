@@ -453,7 +453,7 @@ export default function CunaServidoraView() {
                     </button>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     {/* COLUMNA IZQUIERDA: PRÓXIMOS TURNOS */}
                     <section>
                         <div className="flex items-center gap-2 mb-4">
