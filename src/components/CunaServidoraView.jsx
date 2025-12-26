@@ -124,12 +124,12 @@ const MiniCalendar = ({ currentDate, events, onPrevMonth, onNextMonth }) => {
 
     return (
         <div className="bg-[#112240] border border-slate-700/50 rounded-xl p-6">
-            <div className="flex flex-wrap items-center justify-between gap-y-2 gap-x-4 mb-4">
-                <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-y-2 gap-x-2 mb-4">
+                <div className="flex items-center gap-1">
                     <button onClick={onPrevMonth} className="p-1 hover:bg-white/10 rounded-full text-slate-400 hover:text-white transition-colors flex-shrink-0">
                         <ChevronRight className="rotate-180" size={16} />
                     </button>
-                    <h3 className="text-slate-100 font-bold capitalize">{monthName}</h3>
+                    <h3 className="text-slate-100 font-bold capitalize text-sm sm:text-base">{monthName}</h3>
                     <button onClick={onNextMonth} className="p-1 hover:bg-white/10 rounded-full text-slate-400 hover:text-white transition-colors flex-shrink-0">
                         <ChevronRight size={16} />
                     </button>
