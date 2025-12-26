@@ -39,12 +39,18 @@ const ShiftCard = ({ shift, onRequestChange }) => {
     const dayName = dateObj.toLocaleDateString('es-ES', { weekday: 'long' });
 
     const isExchanging = shift.estado === 'solicitud_cambio';
+    const isSuccess = shift.estado === 'intercambio_exitoso';
 
     return (
-        <div className={`bg-[#112240] border ${isExchanging ? 'border-amber-500/50' : 'border-slate-700/50'} rounded-xl p-6 shadow-lg mb-4 relative overflow-hidden`}>
+        <div className={`bg-[#112240] border ${isSuccess ? 'border-teal-500/50' : isExchanging ? 'border-amber-500/50' : 'border-slate-700/50'} rounded-xl p-6 shadow-lg mb-4 relative overflow-hidden`}>
             {isExchanging && (
                 <div className="absolute top-0 right-0 bg-amber-500 text-amber-950 text-[10px] font-bold px-2 py-1 rounded-bl-lg">
                     EN INTERCAMBIO
+                </div>
+            )}
+            {isSuccess && (
+                <div className="absolute top-0 right-0 bg-teal-500 text-teal-950 text-[10px] font-bold px-2 py-1 rounded-bl-lg">
+                    INTERCAMBIO EXITOSO
                 </div>
             )}
 
@@ -60,14 +66,19 @@ const ShiftCard = ({ shift, onRequestChange }) => {
                         <span>Con: {shift.companero || 'Por asignar'}</span>
                     </div>
                 </div>
-                {!isExchanging && (
+                {!isExchanging && !isSuccess && (
                     <span className="bg-teal-900/30 text-teal-400 border border-teal-700/50 text-xs font-bold px-3 py-1 rounded-full">
                         Cuna (0-2)
                     </span>
                 )}
             </div>
 
-            {isExchanging ? (
+            {isSuccess ? (
+                <div className="bg-teal-900/20 border border-teal-500/30 rounded-lg p-3 text-center mb-2">
+                    <p className="text-teal-400 text-sm font-bold">¡Gracias!</p>
+                    <p className="text-teal-200/70 text-xs">Una compañera ha tomado tu lugar.</p>
+                </div>
+            ) : isExchanging ? (
                 <div className="bg-amber-900/20 border border-amber-500/30 rounded-lg p-3 text-center mb-2">
                     <p className="text-amber-400 text-sm font-bold">Solicitud Activa</p>
                     <p className="text-amber-200/70 text-xs">Esperando que alguien tome el turno.</p>
@@ -258,8 +269,11 @@ export default function CunaServidoraView() {
                     calendarData.forEach(day => {
                         if (!day.cuna_turnos) return; // Skip si no hay turnos array
 
-                        // Buscar mi turno (incluyendo los que están en intercambio porque sigo siendo responsable)
+                        // Buscar mi turno ACTUAL
                         const myTurn = day.cuna_turnos.find(t => t.trabajador_id === user.id && (t.estado === 'asignado' || t.estado === 'confirmado' || t.estado === 'solicitud_cambio'));
+
+                        // Buscar turno INTERCAMBIADO (que era mío)
+                        const exchangedTurn = day.cuna_turnos.find(t => t.trabajador_anterior_id === user.id);
 
                         // Buscar oportunidades (solicitudes de cambio de otros)
                         const opportunity = day.cuna_turnos.find(t => t.estado === 'solicitud_cambio' && t.trabajador_id !== user.id);
@@ -275,6 +289,14 @@ export default function CunaServidoraView() {
                             // El usuario quiere verlo. Lo pintamos como 'mine' pero quizás con otro matiz en el futuro.
                             // Por ahora 'mine' asegura que salga verde en el calendario.
                             eventsMap[day.fecha] = 'mine';
+                        } else if (exchangedTurn) {
+                            // Mostrar como éxito
+                            myShifts.push({
+                                id: exchangedTurn.id,
+                                fecha: day.fecha,
+                                companero: "Compañera de equipo",
+                                estado: 'intercambio_exitoso' // Estado virtual para UI
+                            });
                         } else if (opportunity) {
                             eventsMap[day.fecha] = 'available';
                         }

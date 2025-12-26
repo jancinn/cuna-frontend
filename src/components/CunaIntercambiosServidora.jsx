@@ -181,7 +181,8 @@ export default function CunaIntercambiosServidora() {
                 .from('cuna_turnos')
                 .update({
                     estado: 'asignado',
-                    trabajador_id: user.id
+                    trabajador_id: user.id,
+                    trabajador_anterior_id: shift.originalWorkerId // HISTORIAL: Guardar quién lo soltó
                 })
                 .eq('id', shift.id)
                 .eq('estado', 'solicitud_cambio') // ATOMICIDAD: Solo actualizar si sigue en intercambio
