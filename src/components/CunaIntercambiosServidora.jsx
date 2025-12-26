@@ -166,27 +166,38 @@ export default function CunaIntercambiosServidora() {
         }
     };
 
+    const [processingId, setProcessingId] = useState(null);
+
     const handleTakeShift = async (shift) => {
         if (!confirm(`¿Confirmas que deseas tomar el turno del ${shift.fecha}?`)) return;
 
+        setProcessingId(shift.id);
         try {
             const { data: { user } } = await supabase.auth.getUser();
 
             // Actualizar turno: asignarlo a mí y cambiar estado a asignado
-            const { error } = await supabase
+            const { data, error } = await supabase
                 .from('cuna_turnos')
                 .update({
                     estado: 'asignado',
                     trabajador_id: user.id
                 })
-                .eq('id', shift.id);
+                .eq('id', shift.id)
+                .select(); // Importante: devolver el registro para confirmar
 
             if (error) throw error;
 
+            if (!data || data.length === 0) {
+                throw new Error("No se pudo actualizar el turno. Es posible que ya haya sido tomado o no tengas permisos.");
+            }
+
             alert('¡Turno tomado con éxito! Gracias por tu apoyo.');
-            fetchData(); // Recargar todo
+            await fetchData(); // Recargar todo
         } catch (err) {
+            console.error(err);
             alert('Error al tomar el turno: ' + err.message);
+        } finally {
+            setProcessingId(null);
         }
     };
 
@@ -319,9 +330,13 @@ export default function CunaIntercambiosServidora() {
                                         </div>
                                         <button
                                             onClick={() => handleTakeShift(shift)}
-                                            className="w-full py-2 bg-teal-600 hover:bg-teal-500 text-white text-sm font-bold rounded-lg transition-colors"
+                                            disabled={processingId === shift.id}
+                                            className={`w-full py-2 text-white text-sm font-bold rounded-lg transition-colors ${processingId === shift.id
+                                                    ? 'bg-slate-600 cursor-not-allowed'
+                                                    : 'bg-teal-600 hover:bg-teal-500'
+                                                }`}
                                         >
-                                            Tomar Turno
+                                            {processingId === shift.id ? 'Procesando...' : 'Tomar Turno'}
                                         </button>
                                     </div>
                                 ))
