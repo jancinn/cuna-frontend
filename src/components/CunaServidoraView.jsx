@@ -196,7 +196,7 @@ export default function CunaServidoraView() {
     }, [navigate]);
 
     const handleRequestChange = async (shiftId) => {
-        if (!confirm('¿Confirmas que deseas solicitar un cambio para este turno?')) return;
+        if (!confirm('Al solicitar cambio, tu turno se publicará para que otras compañeras lo vean.\n\nIMPORTANTE: Sigues siendo responsable del turno hasta que alguien lo tome o la admin lo apruebe.\n\n¿Deseas continuar?')) return;
 
         try {
             const { error } = await supabase

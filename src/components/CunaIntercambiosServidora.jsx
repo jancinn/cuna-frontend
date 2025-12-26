@@ -7,57 +7,108 @@ import ServidoraHeader from './ServidoraHeader';
 export default function CunaIntercambiosServidora() {
     const [loading, setLoading] = useState(true);
     const [myShifts, setMyShifts] = useState([]);
+    const [availableShifts, setAvailableShifts] = useState([]);
     const [draggedShift, setDraggedShift] = useState(null);
     const [dropZoneActive, setDropZoneActive] = useState(false);
 
     useEffect(() => {
-        fetchMyShifts();
+        fetchData();
     }, []);
 
-    const fetchMyShifts = async () => {
+    const fetchData = async () => {
+        setLoading(true);
         try {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
 
-            const today = new Date().toISOString().split('T')[0];
-
-            // Fetch turnos futuros
-            const { data, error } = await supabase
-                .from('cuna_turnos')
-                .select(`
-                    id,
-                    slot_numero,
-                    estado,
-                    cuna_calendario (
-                        id,
-                        fecha,
-                        dia_semana
-                    )
-                `)
-                .eq('trabajador_id', user.id)
-                .neq('estado', 'liberado') // Solo asignados o solicitados
-                .gte('cuna_calendario.fecha', today)
-                .order('cuna_calendario(fecha)', { ascending: true });
-
-            if (error) throw error;
-
-            // Aplanar estructura
-            const shifts = data
-                .filter(t => t.cuna_calendario) // Filtrar huérfanos
-                .map(t => ({
-                    id: t.id,
-                    fecha: t.cuna_calendario.fecha,
-                    dia_semana: t.cuna_calendario.dia_semana,
-                    slot: t.slot_numero,
-                    estado: t.estado
-                }));
-
-            setMyShifts(shifts);
+            await Promise.all([
+                fetchMyShifts(user),
+                fetchAvailableShifts(user)
+            ]);
         } catch (err) {
             console.error(err);
         } finally {
             setLoading(false);
         }
+    };
+
+    const fetchMyShifts = async (user) => {
+        const today = new Date().toISOString().split('T')[0];
+
+        // Fetch turnos futuros
+        const { data, error } = await supabase
+            .from('cuna_turnos')
+            .select(`
+                id,
+                slot_numero,
+                estado,
+                cuna_calendario (
+                    id,
+                    fecha,
+                    dia_semana
+                )
+            `)
+            .eq('trabajador_id', user.id)
+            .neq('estado', 'liberado') // Solo asignados o solicitados
+            .gte('cuna_calendario.fecha', today)
+            .order('cuna_calendario(fecha)', { ascending: true });
+
+        if (error) throw error;
+
+        // Aplanar estructura
+        const shifts = data
+            .filter(t => t.cuna_calendario) // Filtrar huérfanos
+            .map(t => ({
+                id: t.id,
+                fecha: t.cuna_calendario.fecha,
+                dia_semana: t.cuna_calendario.dia_semana,
+                slot: t.slot_numero,
+                estado: t.estado
+            }));
+
+        setMyShifts(shifts);
+    };
+
+    const fetchAvailableShifts = async (user) => {
+        const today = new Date().toISOString().split('T')[0];
+
+        // Fetch turnos en solicitud de cambio de OTROS usuarios
+        const { data, error } = await supabase
+            .from('cuna_turnos')
+            .select(`
+                id,
+                slot_numero,
+                estado,
+                trabajador_id,
+                cuna_calendario (
+                    id,
+                    fecha,
+                    dia_semana
+                )
+            `)
+            .eq('estado', 'solicitud_cambio')
+            .neq('trabajador_id', user.id) // No mis propios turnos
+            .gte('cuna_calendario.fecha', today)
+            .order('cuna_calendario(fecha)', { ascending: true });
+
+        if (error) throw error;
+
+        // Obtener nombres de trabajadores para mostrar quién solicita
+        // (Optimización: Podríamos hacer un join si la relación existiera, o fetch separado)
+        // Por simplicidad ahora, mostraremos "Compañera" si no tenemos el nombre
+
+        const shifts = data
+            .filter(t => t.cuna_calendario)
+            .map(t => ({
+                id: t.id,
+                fecha: t.cuna_calendario.fecha,
+                dia_semana: t.cuna_calendario.dia_semana,
+                slot: t.slot_numero,
+                estado: t.estado,
+                originalWorkerId: t.trabajador_id
+            }));
+
+        setAvailableShifts(shifts);
     };
 
     const handleDragStart = (e, shift) => {
@@ -107,9 +158,33 @@ export default function CunaIntercambiosServidora() {
                 s.id === shiftId ? { ...s, estado: 'solicitud_cambio' } : s
             ));
 
-            alert('Fecha expuesta correctamente. La administradora revisará tu solicitud.');
+            alert('Fecha expuesta correctamente. Ahora es visible para otras compañeras.');
         } catch (err) {
             alert('Error al exponer fecha: ' + err.message);
+        }
+    };
+
+    const handleTakeShift = async (shift) => {
+        if (!confirm(`¿Confirmas que deseas tomar el turno del ${shift.fecha}?`)) return;
+
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+
+            // Actualizar turno: asignarlo a mí y cambiar estado a asignado
+            const { error } = await supabase
+                .from('cuna_turnos')
+                .update({
+                    estado: 'asignado',
+                    trabajador_id: user.id
+                })
+                .eq('id', shift.id);
+
+            if (error) throw error;
+
+            alert('¡Turno tomado con éxito! Gracias por tu apoyo.');
+            fetchData(); // Recargar todo
+        } catch (err) {
+            alert('Error al tomar el turno: ' + err.message);
         }
     };
 
@@ -178,35 +253,73 @@ export default function CunaIntercambiosServidora() {
                     </div>
                 </div>
 
-                {/* COLUMNA DERECHA: CANASTA */}
-                <div className="flex flex-col h-full">
-                    <h2 className="font-bold text-slate-300 flex items-center gap-2 mb-4">
-                        <AlertCircle size={20} />
-                        Canasta de Solicitudes
-                    </h2>
+                {/* COLUMNA DERECHA: CANASTA Y OPORTUNIDADES */}
+                <div className="flex flex-col h-full space-y-8">
+                    {/* CANASTA */}
+                    <div>
+                        <h2 className="font-bold text-slate-300 flex items-center gap-2 mb-4">
+                            <AlertCircle size={20} />
+                            Canasta de Solicitudes
+                        </h2>
 
-                    <div
-                        onDragOver={handleDragOver}
-                        onDragLeave={handleDragLeave}
-                        onDrop={handleDrop}
-                        className={`
-                            flex-1 min-h-[300px] rounded-2xl border-2 border-dashed flex flex-col items-center justify-center p-8 text-center transition-all
-                            ${dropZoneActive
-                                ? 'border-teal-500 bg-teal-900/20 scale-[1.02]'
-                                : 'border-slate-600 bg-[#112240]'
-                            }
-                        `}
-                    >
-                        <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-4 transition-colors ${dropZoneActive ? 'bg-teal-900/40 text-teal-400' : 'bg-slate-800 text-slate-500'}`}>
-                            <RefreshCw size={40} className={dropZoneActive ? 'animate-spin' : ''} />
+                        <div
+                            onDragOver={handleDragOver}
+                            onDragLeave={handleDragLeave}
+                            onDrop={handleDrop}
+                            className={`
+                                rounded-2xl border-2 border-dashed flex flex-col items-center justify-center p-8 text-center transition-all
+                                ${dropZoneActive
+                                    ? 'border-teal-500 bg-teal-900/20 scale-[1.02]'
+                                    : 'border-slate-600 bg-[#112240]'
+                                }
+                            `}
+                        >
+                            <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 transition-colors ${dropZoneActive ? 'bg-teal-900/40 text-teal-400' : 'bg-slate-800 text-slate-500'}`}>
+                                <RefreshCw size={32} className={dropZoneActive ? 'animate-spin' : ''} />
+                            </div>
+
+                            <h3 className={`text-base font-bold mb-1 ${dropZoneActive ? 'text-teal-400' : 'text-slate-400'}`}>
+                                {dropZoneActive ? '¡Suelta para solicitar!' : 'Arrastra aquí para solicitar cambio'}
+                            </h3>
                         </div>
+                    </div>
 
-                        <h3 className={`text-lg font-bold mb-2 ${dropZoneActive ? 'text-teal-400' : 'text-slate-400'}`}>
-                            {dropZoneActive ? '¡Suelta para solicitar cambio!' : 'Arrastra aquí tu fecha'}
-                        </h3>
-                        <p className="text-sm text-slate-500 max-w-xs">
-                            Al soltar, tu fecha quedará marcada como "Pendiente de Intercambio" y la administradora será notificada.
-                        </p>
+                    {/* OPORTUNIDADES */}
+                    <div className="flex-1">
+                        <h2 className="font-bold text-slate-300 flex items-center gap-2 mb-4">
+                            <CheckCircle2 size={20} className="text-teal-400" />
+                            Turnos Disponibles
+                        </h2>
+
+                        <div className="space-y-3">
+                            {availableShifts.length > 0 ? (
+                                availableShifts.map(shift => (
+                                    <div key={shift.id} className="bg-[#112240] border border-slate-700 rounded-xl p-4 hover:border-teal-500/50 transition-colors">
+                                        <div className="flex justify-between items-start mb-3">
+                                            <div>
+                                                <p className="font-bold text-slate-100 capitalize">
+                                                    {new Date(shift.fecha + 'T00:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'short' })}
+                                                </p>
+                                                <p className="text-xs text-slate-400 mt-1">Solicitado por compañera</p>
+                                            </div>
+                                            <span className="bg-teal-900/30 text-teal-400 text-[10px] font-bold px-2 py-1 rounded">
+                                                CUNA
+                                            </span>
+                                        </div>
+                                        <button
+                                            onClick={() => handleTakeShift(shift)}
+                                            className="w-full py-2 bg-teal-600 hover:bg-teal-500 text-white text-sm font-bold rounded-lg transition-colors"
+                                        >
+                                            Tomar Turno
+                                        </button>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="text-center py-8 bg-[#112240]/50 rounded-xl border border-slate-800">
+                                    <p className="text-slate-500 text-sm">No hay turnos disponibles para tomar.</p>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
