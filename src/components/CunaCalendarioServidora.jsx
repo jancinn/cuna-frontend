@@ -96,13 +96,22 @@ export default function CunaCalendarioServidora() {
                         Tienes <strong className="text-teal-400">{myShifts.length} turno(s)</strong> programado(s) este mes.
                     </p>
                 </div>
-                <button
-                    onClick={() => navigate('/servidora/intercambios')}
-                    className="px-4 py-2 bg-[#112240] border border-slate-600 text-slate-300 font-medium rounded-lg hover:bg-white/5 hover:border-teal-400 transition-all flex items-center gap-2 shadow-sm"
-                >
-                    <RefreshCw size={16} />
-                    Ir a Intercambios
-                </button>
+                <div className="flex gap-3">
+                    <button
+                        onClick={() => navigate('/servidora')}
+                        className="hidden md:flex items-center gap-2 px-4 py-2 bg-[#112240] border border-slate-700 rounded-lg text-slate-300 hover:text-white hover:border-teal-500 transition-all"
+                    >
+                        <ArrowRight className="rotate-180" size={18} />
+                        Inicio
+                    </button>
+                    <button
+                        onClick={() => navigate('/servidora/intercambios')}
+                        className="px-4 py-2 bg-[#112240] border border-slate-600 text-slate-300 font-medium rounded-lg hover:bg-white/5 hover:border-teal-400 transition-all flex items-center gap-2 shadow-sm"
+                    >
+                        <RefreshCw size={16} />
+                        Ir a Intercambios
+                    </button>
+                </div>
             </header>
 
             {/* LISTADO DE TURNOS */}

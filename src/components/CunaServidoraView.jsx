@@ -217,10 +217,10 @@ export default function CunaServidoraView() {
 
                 calendarData?.forEach(day => {
                     // Buscar mi turno
-                    const myTurn = day.cuna_turnos.find(t => t.trabajador_id === user.id && (t.estado === 'asignado' || t.estado === 'confirmado'));
+                    const myTurn = day.cuna_turnos?.find(t => t.trabajador_id === user.id && (t.estado === 'asignado' || t.estado === 'confirmado'));
 
                     // Buscar oportunidades (solicitudes de cambio de otros)
-                    const opportunity = day.cuna_turnos.find(t => t.estado === 'solicitud_cambio' && t.trabajador_id !== user.id);
+                    const opportunity = day.cuna_turnos?.find(t => t.estado === 'solicitud_cambio' && t.trabajador_id !== user.id);
 
                     if (myTurn) {
                         myShifts.push({

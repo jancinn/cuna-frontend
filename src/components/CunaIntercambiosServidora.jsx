@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import { Calendar, ArrowRight, RefreshCw, AlertCircle, CheckCircle2 } from 'lucide-react';
 
+import { useNavigate } from 'react-router-dom';
 import ServidoraHeader from './ServidoraHeader';
 
 export default function CunaIntercambiosServidora() {
+    const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [myShifts, setMyShifts] = useState([]);
     const [availableShifts, setAvailableShifts] = useState([]);
@@ -193,12 +195,21 @@ export default function CunaIntercambiosServidora() {
     return (
         <div className="p-4 md:p-8 pt-20 md:pt-8 max-w-5xl mx-auto font-sans text-slate-200 bg-[#0a192f] min-h-screen">
             <ServidoraHeader />
-            <header className="mb-8">
-                <h1 className="text-2xl font-bold text-slate-100 flex items-center gap-2">
-                    <RefreshCw className="text-teal-400" />
-                    Gestión de Intercambios
-                </h1>
-                <p className="text-slate-400 mt-1">Arrastra tus turnos a la canasta para solicitar un cambio.</p>
+            <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold text-slate-100 flex items-center gap-2">
+                        <RefreshCw className="text-teal-400" />
+                        Gestión de Intercambios
+                    </h1>
+                    <p className="text-slate-400 mt-1">Arrastra tus turnos a la canasta para solicitar un cambio.</p>
+                </div>
+                <button
+                    onClick={() => navigate('/servidora')}
+                    className="hidden md:flex items-center gap-2 px-4 py-2 bg-[#112240] border border-slate-700 rounded-lg text-slate-300 hover:text-white hover:border-teal-500 transition-all"
+                >
+                    <ArrowRight className="rotate-180" size={18} />
+                    Inicio
+                </button>
             </header>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
