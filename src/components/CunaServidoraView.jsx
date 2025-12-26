@@ -147,8 +147,8 @@ const MiniCalendar = ({ currentDate, events, onPrevMonth, onNextMonth }) => {
             </div>
 
             <div className="grid grid-cols-7 gap-1 text-center mb-2">
-                {['L', 'M', 'M', 'J', 'V', 'S', 'D'].map(d => (
-                    <div key={d} className="text-xs font-bold text-slate-500 py-1">{d}</div>
+                {['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((d, i) => (
+                    <div key={i} className="text-xs font-bold text-slate-500 py-1">{d}</div>
                 ))}
             </div>
 
