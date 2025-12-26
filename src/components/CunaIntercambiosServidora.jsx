@@ -184,6 +184,7 @@ export default function CunaIntercambiosServidora() {
                     trabajador_id: user.id
                 })
                 .eq('id', shift.id)
+                .eq('estado', 'solicitud_cambio') // ATOMICIDAD: Solo actualizar si sigue en intercambio
                 .select(); // Importante: devolver el registro para confirmar
 
             if (error) throw error;
