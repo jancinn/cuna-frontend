@@ -174,6 +174,7 @@ export default function CunaServidoraView() {
     const [nextShifts, setNextShifts] = useState([]);
     const [calendarEvents, setCalendarEvents] = useState({}); // { '2025-12-26': 'mine' }
     const [activeTab, setActiveTab] = useState('inicio');
+    const [displayDate, setDisplayDate] = useState(new Date());
 
     const [error, setError] = useState(null);
 
@@ -320,7 +321,7 @@ export default function CunaServidoraView() {
         );
     }
 
-    const [displayDate, setDisplayDate] = useState(new Date());
+
 
     const handlePrevMonth = () => {
         setDisplayDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
