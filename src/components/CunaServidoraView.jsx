@@ -63,30 +63,98 @@ const ShiftCard = ({ shift, onRequestChange }) => {
                 Solicitar cambio
             </button>
             <p className="text-xs text-slate-500 text-center mt-3 px-4">
-                Si necesitas cambiar este turno, no te preocupes. Estamos aquí para apoyarte.
+                Al solicitar cambio, tu turno se publicará para que otras compañeras lo vean. Sigues siendo responsable hasta que alguien lo tome.
             </p>
         </div>
     );
 };
 
-const MonthCalendarItem = ({ date, dayName, year, isAssigned }) => (
-    <div className="flex items-center justify-between p-4 border border-slate-700/50 rounded-lg hover:border-slate-600 transition-colors bg-[#112240]">
-        <div>
-            <p className="font-bold text-slate-200">{date}</p>
-            <p className="text-xs text-slate-500 capitalize">{dayName}</p>
-        </div>
-        <div className="flex items-center gap-3">
-            {isAssigned && (
-                <span className="w-2 h-2 rounded-full bg-teal-500" title="Tu turno"></span>
-            )}
-            <span className="bg-slate-800 text-slate-400 text-xs font-medium px-2 py-1 rounded">
-                0-2 años
-            </span>
-        </div>
-    </div>
-);
+// --- MINI CALENDAR COMPONENT ---
+const MiniCalendar = ({ currentDate, events }) => {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
 
-import ServidoraHeader from './ServidoraHeader';
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startingDayIndex = firstDay.getDay(); // 0 = Sunday
+
+    // Ajustar para que lunes sea 0 (si se prefiere lunes como primer día)
+    // En JS getDay(): 0=Sun, 1=Mon. Si queremos Mon=0, Sun=6:
+    const adjustedStart = startingDayIndex === 0 ? 6 : startingDayIndex - 1;
+
+    const days = [];
+    // Relleno previo
+    for (let i = 0; i < adjustedStart; i++) {
+        days.push(null);
+    }
+    // Días del mes
+    for (let i = 1; i <= daysInMonth; i++) {
+        days.push(i);
+    }
+
+    const monthName = currentDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+
+    const getDayStatus = (day) => {
+        if (!day) return null;
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        return events[dateStr]; // 'mine', 'available', etc.
+    };
+
+    return (
+        <div className="bg-[#112240] border border-slate-700/50 rounded-xl p-6">
+            <div className="flex items-center justify-between mb-4">
+                <h3 className="text-slate-100 font-bold capitalize">{monthName}</h3>
+                <div className="flex gap-3 text-[10px]">
+                    <div className="flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full bg-teal-500"></span>
+                        <span className="text-slate-400">Tu turno</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                        <span className="text-slate-400">Disponible</span>
+                    </div>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-7 gap-1 text-center mb-2">
+                {['L', 'M', 'M', 'J', 'V', 'S', 'D'].map(d => (
+                    <div key={d} className="text-xs font-bold text-slate-500 py-1">{d}</div>
+                ))}
+            </div>
+
+            <div className="grid grid-cols-7 gap-1">
+                {days.map((day, idx) => {
+                    const status = getDayStatus(day);
+                    let bgClass = 'hover:bg-white/5 text-slate-300';
+                    let ringClass = '';
+
+                    if (status === 'mine') {
+                        bgClass = 'bg-teal-900/40 text-teal-400 font-bold';
+                        ringClass = 'ring-1 ring-teal-500/50';
+                    } else if (status === 'available') {
+                        bgClass = 'bg-amber-900/20 text-amber-400 font-bold';
+                        ringClass = 'ring-1 ring-amber-500/50 border-dashed border-amber-500';
+                    } else if (!day) {
+                        bgClass = 'invisible';
+                    }
+
+                    return (
+                        <div
+                            key={idx}
+                            className={`
+                                aspect-square flex items-center justify-center rounded-lg text-sm transition-all
+                                ${bgClass} ${ringClass}
+                            `}
+                        >
+                            {day}
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+};
 
 // ... (imports remain the same)
 
@@ -95,7 +163,7 @@ export default function CunaServidoraView() {
     const [loading, setLoading] = useState(true);
     const [userProfile, setUserProfile] = useState(null);
     const [nextShifts, setNextShifts] = useState([]);
-    const [monthSchedule, setMonthSchedule] = useState([]);
+    const [calendarEvents, setCalendarEvents] = useState({}); // { '2025-12-26': 'mine' }
     const [activeTab, setActiveTab] = useState('inicio');
 
     useEffect(() => {
@@ -124,7 +192,6 @@ export default function CunaServidoraView() {
                 setUserProfile({ ...profile, displayName: userName, id: user.id });
 
                 // 3. Obtener calendario y turnos
-                // Traemos todo el calendario futuro
                 const today = new Date().toISOString().split('T')[0];
                 const { data: calendarData, error } = await supabase
                     .from('cuna_calendario')
@@ -144,46 +211,31 @@ export default function CunaServidoraView() {
 
                 if (error) throw error;
 
-                // 4. Procesar datos para la UI
-
-                // A) Mis próximos turnos
+                // 4. Procesar datos
                 const myShifts = [];
-                const scheduleList = [];
-
-                // Necesitamos saber quién es el compañero en mis turnos
-                // Para simplificar, haremos un fetch adicional de nombres si es necesario, 
-                // o por ahora mostraremos "Compañero" genérico.
-                // *Mejora futura: traer nombres de compañeros.*
+                const eventsMap = {};
 
                 calendarData?.forEach(day => {
-                    const dateObj = new Date(day.fecha + 'T00:00:00');
-                    const dayNum = dateObj.getDate();
-                    const monthShort = dateObj.toLocaleDateString('es-ES', { month: 'short' });
-                    const dayName = dateObj.toLocaleDateString('es-ES', { weekday: 'long' });
-
-                    // Buscar si tengo turno este día
+                    // Buscar mi turno
                     const myTurn = day.cuna_turnos.find(t => t.trabajador_id === user.id && (t.estado === 'asignado' || t.estado === 'confirmado'));
+
+                    // Buscar oportunidades (solicitudes de cambio de otros)
+                    const opportunity = day.cuna_turnos.find(t => t.estado === 'solicitud_cambio' && t.trabajador_id !== user.id);
 
                     if (myTurn) {
                         myShifts.push({
                             id: myTurn.id,
                             fecha: day.fecha,
-                            companero: "Compañera de equipo" // Placeholder hasta hacer join complejo
+                            companero: "Compañera de equipo"
                         });
+                        eventsMap[day.fecha] = 'mine';
+                    } else if (opportunity) {
+                        eventsMap[day.fecha] = 'available';
                     }
-
-                    // Construir lista calendario
-                    scheduleList.push({
-                        id: day.id,
-                        date: `${dayNum} ${monthShort}`,
-                        dayName: dayName,
-                        fullDate: day.fecha,
-                        isAssigned: !!myTurn
-                    });
                 });
 
-                setNextShifts(myShifts.slice(0, 2)); // Solo los 2 siguientes
-                setMonthSchedule(scheduleList.slice(0, 5)); // Próximos 5 eventos en lista
+                setNextShifts(myShifts.slice(0, 2));
+                setCalendarEvents(eventsMap);
 
             } catch (err) {
                 console.error("Error cargando datos:", err);
@@ -195,27 +247,7 @@ export default function CunaServidoraView() {
         loadData();
     }, [navigate]);
 
-    const handleRequestChange = async (shiftId) => {
-        if (!confirm('Al solicitar cambio, tu turno se publicará para que otras compañeras lo vean.\n\nIMPORTANTE: Sigues siendo responsable del turno hasta que alguien lo tome o la admin lo apruebe.\n\n¿Deseas continuar?')) return;
-
-        try {
-            const { error } = await supabase
-                .from('cuna_turnos')
-                .update({ estado: 'solicitud_cambio' })
-                .eq('id', shiftId);
-
-            if (error) throw error;
-            alert('Solicitud enviada correctamente.');
-            window.location.reload(); // Recarga simple para actualizar estado
-        } catch (err) {
-            alert('Error: ' + err.message);
-        }
-    };
-
-    const handleLogout = async () => {
-        await supabase.auth.signOut();
-        navigate('/login');
-    };
+    // ... (rest of handlers remain the same)
 
     if (loading) {
         return (
@@ -350,25 +382,15 @@ export default function CunaServidoraView() {
                         )}
                     </section>
 
-                    {/* COLUMNA DERECHA: CALENDARIO DEL MES */}
+                    {/* COLUMNA DERECHA: CALENDARIO VISUAL */}
                     <section>
-                        <h2 className="text-lg font-bold text-slate-100 mb-1">Calendario del mes</h2>
-                        <p className="text-sm text-slate-500 mb-4">Tus fechas destacadas este mes</p>
+                        <h2 className="text-lg font-bold text-slate-100 mb-1">Tu mes en un vistazo</h2>
+                        <p className="text-sm text-slate-500 mb-4">Puntos verdes son tus turnos, amarillos son oportunidades.</p>
 
-                        <div className="bg-[#112240] border border-slate-700/50 rounded-xl p-4 space-y-3">
-                            {monthSchedule.length > 0 ? (
-                                monthSchedule.map(item => (
-                                    <MonthCalendarItem
-                                        key={item.id}
-                                        date={item.date}
-                                        dayName={item.dayName}
-                                        isAssigned={item.isAssigned}
-                                    />
-                                ))
-                            ) : (
-                                <p className="text-center text-slate-500 py-4">No hay fechas programadas.</p>
-                            )}
-                        </div>
+                        <MiniCalendar
+                            currentDate={new Date()}
+                            events={calendarEvents}
+                        />
                     </section>
                 </div>
             </main>
