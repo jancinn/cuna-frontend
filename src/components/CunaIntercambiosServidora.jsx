@@ -225,54 +225,74 @@ export default function CunaIntercambiosServidora() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* COLUMNA IZQUIERDA: MIS TURNOS */}
-                <div className="space-y-4">
-                    <h2 className="font-bold text-slate-300 flex items-center gap-2">
-                        <Calendar size={20} />
-                        Mis Fechas Asignadas
-                    </h2>
-
-                    <div className="space-y-3">
-                        {myShifts.length > 0 ? (
-                            myShifts.map(shift => (
-                                <div
-                                    key={shift.id}
-                                    draggable={shift.estado !== 'solicitud_cambio'}
-                                    onDragStart={(e) => handleDragStart(e, shift)}
-                                    className={`
-                                        p-4 rounded-xl border transition-all flex items-center justify-between
-                                        ${shift.estado === 'solicitud_cambio'
-                                            ? 'bg-amber-900/20 border-amber-700/50 opacity-75 cursor-default'
-                                            : 'bg-[#112240] border-slate-700 hover:border-teal-400 hover:shadow-lg cursor-grab active:cursor-grabbing'
-                                        }
-                                    `}
-                                >
-                                    <div>
-                                        <p className="font-bold text-slate-100 capitalize">
-                                            {new Date(shift.fecha + 'T00:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}
-                                        </p>
-                                        <div className="flex items-center gap-2 mt-1">
-                                            <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${shift.dia_semana === 'viernes' ? 'bg-purple-900/30 text-purple-300' : 'bg-teal-900/30 text-teal-300'}`}>
-                                                {shift.dia_semana}
-                                            </span>
-                                            {shift.estado === 'solicitud_cambio' && (
-                                                <span className="text-xs text-amber-400 font-bold flex items-center gap-1">
-                                                    <RefreshCw size={12} /> Solicitado
+                <div className="space-y-6">
+                    {/* SECCIÓN 1: TURNOS CONFIRMADOS */}
+                    <div>
+                        <h2 className="font-bold text-slate-300 flex items-center gap-2 mb-3">
+                            <Calendar size={20} className="text-teal-400" />
+                            Mis Turnos Confirmados
+                        </h2>
+                        <div className="space-y-3">
+                            {myShifts.filter(s => s.estado !== 'solicitud_cambio').length > 0 ? (
+                                myShifts.filter(s => s.estado !== 'solicitud_cambio').map(shift => (
+                                    <div
+                                        key={shift.id}
+                                        draggable={true}
+                                        onDragStart={(e) => handleDragStart(e, shift)}
+                                        className="p-4 rounded-xl border bg-[#112240] border-slate-700 hover:border-teal-400 hover:shadow-lg cursor-grab active:cursor-grabbing transition-all flex items-center justify-between"
+                                    >
+                                        <div>
+                                            <p className="font-bold text-slate-100 capitalize">
+                                                {new Date(shift.fecha + 'T00:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}
+                                            </p>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${shift.dia_semana === 'viernes' ? 'bg-purple-900/30 text-purple-300' : 'bg-teal-900/30 text-teal-300'}`}>
+                                                    {shift.dia_semana}
                                                 </span>
-                                            )}
+                                            </div>
                                         </div>
-                                    </div>
-
-                                    {shift.estado !== 'solicitud_cambio' && (
                                         <div className="text-slate-500">
                                             <ArrowRight size={20} />
                                         </div>
-                                    )}
-                                </div>
-                            ))
-                        ) : (
-                            <p className="text-slate-500 italic">No tienes turnos futuros asignados.</p>
-                        )}
+                                    </div>
+                                ))
+                            ) : (
+                                <p className="text-slate-500 italic text-sm">No tienes turnos confirmados.</p>
+                            )}
+                        </div>
                     </div>
+
+                    {/* SECCIÓN 2: EN INTERCAMBIO */}
+                    {myShifts.some(s => s.estado === 'solicitud_cambio') && (
+                        <div>
+                            <h2 className="font-bold text-amber-400 flex items-center gap-2 mb-3 mt-6 border-t border-slate-700/50 pt-6">
+                                <RefreshCw size={20} />
+                                Solicitudes Pendientes
+                            </h2>
+                            <div className="space-y-3">
+                                {myShifts.filter(s => s.estado === 'solicitud_cambio').map(shift => (
+                                    <div
+                                        key={shift.id}
+                                        className="p-4 rounded-xl border bg-amber-900/10 border-amber-700/30 opacity-75 cursor-default flex items-center justify-between"
+                                    >
+                                        <div>
+                                            <p className="font-bold text-slate-300 capitalize">
+                                                {new Date(shift.fecha + 'T00:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}
+                                            </p>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-slate-700 text-slate-400">
+                                                    {shift.dia_semana}
+                                                </span>
+                                                <span className="text-xs text-amber-400 font-bold flex items-center gap-1">
+                                                    <RefreshCw size={12} /> Esperando relevo
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* COLUMNA DERECHA: CANASTA Y OPORTUNIDADES */}
@@ -332,8 +352,8 @@ export default function CunaIntercambiosServidora() {
                                             onClick={() => handleTakeShift(shift)}
                                             disabled={processingId === shift.id}
                                             className={`w-full py-2 text-white text-sm font-bold rounded-lg transition-colors ${processingId === shift.id
-                                                    ? 'bg-slate-600 cursor-not-allowed'
-                                                    : 'bg-teal-600 hover:bg-teal-500'
+                                                ? 'bg-slate-600 cursor-not-allowed'
+                                                : 'bg-teal-600 hover:bg-teal-500'
                                                 }`}
                                         >
                                             {processingId === shift.id ? 'Procesando...' : 'Tomar Turno'}
