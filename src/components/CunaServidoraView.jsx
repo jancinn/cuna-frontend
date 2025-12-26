@@ -21,8 +21,8 @@ const SidebarItem = ({ icon: Icon, label, active, onClick }) => (
     <button
         onClick={onClick}
         className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${active
-            ? 'bg-blue-600 text-white'
-            : 'text-slate-600 hover:bg-slate-100'
+            ? 'bg-teal-600 text-white'
+            : 'text-slate-400 hover:bg-white/5 hover:text-teal-400'
             }`}
     >
         <Icon size={20} />
@@ -38,48 +38,48 @@ const ShiftCard = ({ shift, onRequestChange }) => {
     const dayName = dateObj.toLocaleDateString('es-ES', { weekday: 'long' });
 
     return (
-        <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm mb-4">
+        <div className="bg-[#112240] border border-slate-700/50 rounded-xl p-6 shadow-lg mb-4">
             <div className="flex justify-between items-start mb-4">
                 <div>
-                    <h3 className="text-lg font-bold text-slate-900 capitalize">{dateStr}</h3>
-                    <div className="flex items-center gap-2 text-slate-500 mt-1">
+                    <h3 className="text-lg font-bold text-slate-100 capitalize">{dateStr}</h3>
+                    <div className="flex items-center gap-2 text-slate-400 mt-1">
                         <Clock size={16} />
                         <span className="capitalize">{dayName}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-slate-500 mt-1">
+                    <div className="flex items-center gap-2 text-slate-400 mt-1">
                         <User size={16} />
                         <span>Con: {shift.companero || 'Por asignar'}</span>
                     </div>
                 </div>
-                <span className="bg-blue-100 text-blue-700 text-xs font-bold px-3 py-1 rounded-full">
+                <span className="bg-teal-900/30 text-teal-400 border border-teal-700/50 text-xs font-bold px-3 py-1 rounded-full">
                     Cuna (0-2)
                 </span>
             </div>
 
             <button
                 onClick={() => onRequestChange(shift.id)}
-                className="w-full py-2.5 border border-slate-300 text-slate-700 font-medium rounded-lg hover:bg-slate-50 transition-colors"
+                className="w-full py-2.5 border border-slate-600 text-slate-300 font-medium rounded-lg hover:bg-white/5 transition-colors"
             >
                 Solicitar cambio
             </button>
-            <p className="text-xs text-slate-400 text-center mt-3 px-4">
-                Si necesitas cambiar este turno, no te preocupes. Estamos aquí para apoyarte y encontrar una solución juntos.
+            <p className="text-xs text-slate-500 text-center mt-3 px-4">
+                Si necesitas cambiar este turno, no te preocupes. Estamos aquí para apoyarte.
             </p>
         </div>
     );
 };
 
 const MonthCalendarItem = ({ date, dayName, year, isAssigned }) => (
-    <div className="flex items-center justify-between p-4 border border-slate-100 rounded-lg hover:border-slate-200 transition-colors bg-white">
+    <div className="flex items-center justify-between p-4 border border-slate-700/50 rounded-lg hover:border-slate-600 transition-colors bg-[#112240]">
         <div>
-            <p className="font-bold text-slate-900">{date}</p>
+            <p className="font-bold text-slate-200">{date}</p>
             <p className="text-xs text-slate-500 capitalize">{dayName}</p>
         </div>
         <div className="flex items-center gap-3">
             {isAssigned && (
-                <span className="w-2 h-2 rounded-full bg-blue-500" title="Tu turno"></span>
+                <span className="w-2 h-2 rounded-full bg-teal-500" title="Tu turno"></span>
             )}
-            <span className="bg-slate-100 text-slate-600 text-xs font-medium px-2 py-1 rounded">
+            <span className="bg-slate-800 text-slate-400 text-xs font-medium px-2 py-1 rounded">
                 0-2 años
             </span>
         </div>
@@ -219,21 +219,21 @@ export default function CunaServidoraView() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-slate-50">
-                <Loader2 className="animate-spin text-blue-600" size={32} />
+            <div className="min-h-screen flex items-center justify-center bg-[#0a192f]">
+                <Loader2 className="animate-spin text-teal-500" size={32} />
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-slate-50 flex font-sans text-slate-900">
+        <div className="min-h-screen bg-[#0a192f] flex font-sans text-slate-200">
             <ServidoraHeader />
 
             {/* SIDEBAR (Desktop only) */}
-            <aside className="w-64 bg-white border-r border-slate-200 hidden md:flex flex-col fixed h-full">
+            <aside className="w-64 bg-[#112240] border-r border-slate-700/50 hidden md:flex flex-col fixed h-full">
                 {/* ... (sidebar content remains the same) */}
-                <div className="p-6 border-b border-slate-100">
-                    <div className="flex items-center gap-2 text-blue-600 font-bold text-xl">
+                <div className="p-6 border-b border-slate-700/50">
+                    <div className="flex items-center gap-2 text-teal-400 font-bold text-xl">
                         <CalendarIcon size={24} />
                         <span>Módulo de Cuna</span>
                     </div>
@@ -272,16 +272,16 @@ export default function CunaServidoraView() {
                     />
                 </nav>
 
-                <div className="p-4 border-t border-slate-100">
+                <div className="p-4 border-t border-slate-700/50">
                     <div className="flex items-center gap-3 px-4 py-3">
-                        <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm">
+                        <div className="w-8 h-8 rounded-full bg-teal-600 flex items-center justify-center text-white font-bold text-sm">
                             {userProfile?.displayName?.charAt(0).toUpperCase()}
                         </div>
                         <div className="flex-1 min-w-0">
-                            <p className="text-sm font-bold text-slate-900 truncate">{userProfile?.displayName}</p>
+                            <p className="text-sm font-bold text-slate-200 truncate">{userProfile?.displayName}</p>
                             <p className="text-xs text-slate-500 capitalize">{userProfile?.rol || 'Servidora'}</p>
                         </div>
-                        <button onClick={handleLogout} className="text-slate-400 hover:text-red-500 transition-colors">
+                        <button onClick={handleLogout} className="text-slate-400 hover:text-red-400 transition-colors">
                             <LogOut size={16} />
                         </button>
                     </div>
@@ -291,35 +291,35 @@ export default function CunaServidoraView() {
             {/* MAIN CONTENT */}
             <main className="flex-1 md:ml-64 p-4 md:p-8 pt-20 md:pt-8">
                 <header className="mb-8 hidden md:block">
-                    <h1 className="text-3xl font-bold text-slate-900">Bienvenido, {userProfile?.displayName}</h1>
-                    <p className="text-slate-500 mt-1">Aquí está tu resumen de turnos y actividad reciente</p>
+                    <h1 className="text-3xl font-bold text-slate-100">Bienvenido, {userProfile?.displayName}</h1>
+                    <p className="text-slate-400 mt-1">Aquí está tu resumen de turnos y actividad reciente</p>
                 </header>
 
                 {/* Mobile Welcome */}
                 <div className="md:hidden mb-6">
-                    <h2 className="text-xl font-bold text-slate-900">Hola, {userProfile?.displayName?.split(' ')[0]}</h2>
-                    <p className="text-xs text-slate-500">Resumen de actividad</p>
+                    <h2 className="text-xl font-bold text-slate-100">Hola, {userProfile?.displayName?.split(' ')[0]}</h2>
+                    <p className="text-xs text-slate-400">Resumen de actividad</p>
                 </div>
 
                 {/* ACCESOS RÁPIDOS (Mobile Only) */}
                 <div className="grid grid-cols-3 gap-3 mb-8 md:hidden">
-                    <button onClick={() => navigate('/servidora/calendario')} className="flex flex-col items-center justify-center p-3 bg-white border border-slate-200 rounded-xl shadow-sm active:scale-95 transition-transform">
-                        <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mb-2">
+                    <button onClick={() => navigate('/servidora/calendario')} className="flex flex-col items-center justify-center p-3 bg-[#112240] border border-slate-700 rounded-xl shadow-sm active:scale-95 transition-transform">
+                        <div className="w-10 h-10 bg-teal-900/30 text-teal-400 rounded-full flex items-center justify-center mb-2">
                             <CalendarIcon size={20} />
                         </div>
-                        <span className="text-[10px] font-bold text-slate-700">Calendario</span>
+                        <span className="text-[10px] font-bold text-slate-300">Calendario</span>
                     </button>
-                    <button onClick={() => navigate('/servidora/intercambios')} className="flex flex-col items-center justify-center p-3 bg-white border border-slate-200 rounded-xl shadow-sm active:scale-95 transition-transform">
-                        <div className="w-10 h-10 bg-amber-50 text-amber-600 rounded-full flex items-center justify-center mb-2">
+                    <button onClick={() => navigate('/servidora/intercambios')} className="flex flex-col items-center justify-center p-3 bg-[#112240] border border-slate-700 rounded-xl shadow-sm active:scale-95 transition-transform">
+                        <div className="w-10 h-10 bg-amber-900/30 text-amber-400 rounded-full flex items-center justify-center mb-2">
                             <Repeat size={20} />
                         </div>
-                        <span className="text-[10px] font-bold text-slate-700">Intercambios</span>
+                        <span className="text-[10px] font-bold text-slate-300">Intercambios</span>
                     </button>
-                    <button onClick={() => navigate('/servidora/comunicacion')} className="flex flex-col items-center justify-center p-3 bg-white border border-slate-200 rounded-xl shadow-sm active:scale-95 transition-transform">
-                        <div className="w-10 h-10 bg-purple-50 text-purple-600 rounded-full flex items-center justify-center mb-2">
+                    <button onClick={() => navigate('/servidora/comunicacion')} className="flex flex-col items-center justify-center p-3 bg-[#112240] border border-slate-700 rounded-xl shadow-sm active:scale-95 transition-transform">
+                        <div className="w-10 h-10 bg-purple-900/30 text-purple-400 rounded-full flex items-center justify-center mb-2">
                             <MessageSquare size={20} />
                         </div>
-                        <span className="text-[10px] font-bold text-slate-700">Mensajes</span>
+                        <span className="text-[10px] font-bold text-slate-300">Mensajes</span>
                     </button>
                 </div>
 
@@ -327,8 +327,8 @@ export default function CunaServidoraView() {
                     {/* COLUMNA IZQUIERDA: PRÓXIMOS TURNOS */}
                     <section>
                         <div className="flex items-center gap-2 mb-4">
-                            <CalendarIcon className="text-blue-600" size={20} />
-                            <h2 className="text-lg font-bold text-slate-900">Mis próximos turnos</h2>
+                            <CalendarIcon className="text-teal-400" size={20} />
+                            <h2 className="text-lg font-bold text-slate-100">Mis próximos turnos</h2>
                         </div>
 
                         {nextShifts.length > 0 ? (
@@ -340,11 +340,11 @@ export default function CunaServidoraView() {
                                 />
                             ))
                         ) : (
-                            <div className="bg-white border border-slate-200 rounded-xl p-8 text-center">
-                                <div className="w-12 h-12 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <div className="bg-[#112240] border border-slate-700 rounded-xl p-8 text-center">
+                                <div className="w-12 h-12 bg-teal-900/30 text-teal-400 rounded-full flex items-center justify-center mx-auto mb-3">
                                     <CheckCircle size={24} />
                                 </div>
-                                <h3 className="text-slate-900 font-bold">¡Todo despejado!</h3>
+                                <h3 className="text-slate-100 font-bold">¡Todo despejado!</h3>
                                 <p className="text-slate-500 text-sm mt-1">No tienes turnos asignados próximamente.</p>
                             </div>
                         )}
@@ -352,10 +352,10 @@ export default function CunaServidoraView() {
 
                     {/* COLUMNA DERECHA: CALENDARIO DEL MES */}
                     <section>
-                        <h2 className="text-lg font-bold text-slate-900 mb-1">Calendario del mes</h2>
+                        <h2 className="text-lg font-bold text-slate-100 mb-1">Calendario del mes</h2>
                         <p className="text-sm text-slate-500 mb-4">Tus fechas destacadas este mes</p>
 
-                        <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-3">
+                        <div className="bg-[#112240] border border-slate-700/50 rounded-xl p-4 space-y-3">
                             {monthSchedule.length > 0 ? (
                                 monthSchedule.map(item => (
                                     <MonthCalendarItem
@@ -366,7 +366,7 @@ export default function CunaServidoraView() {
                                     />
                                 ))
                             ) : (
-                                <p className="text-center text-slate-400 py-4">No hay fechas programadas.</p>
+                                <p className="text-center text-slate-500 py-4">No hay fechas programadas.</p>
                             )}
                         </div>
                     </section>

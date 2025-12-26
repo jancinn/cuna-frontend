@@ -53,20 +53,22 @@ export default function CunaCalendarioServidora() {
             const { data: workerResponse } = await supabase.functions.invoke('listar-trabajadores');
             const allWorkers = Array.isArray(workerResponse) ? workerResponse : [];
 
-            const shifts = data.map(t => {
-                // Encontrar compañero (el otro slot del mismo día)
-                const partnerTurn = t.cuna_calendario.cuna_turnos.find(pt => pt.slot_numero !== t.slot_numero);
-                const partnerWorker = partnerTurn ? allWorkers.find(w => w.id === partnerTurn.trabajador_id) : null;
+            const shifts = data
+                .filter(t => t.cuna_calendario) // Filtrar turnos sin calendario asociado
+                .map(t => {
+                    // Encontrar compañero (el otro slot del mismo día)
+                    const partnerTurn = t.cuna_calendario.cuna_turnos?.find(pt => pt.slot_numero !== t.slot_numero);
+                    const partnerWorker = partnerTurn ? allWorkers.find(w => w.id === partnerTurn.trabajador_id) : null;
 
-                return {
-                    id: t.id,
-                    fecha: t.cuna_calendario.fecha,
-                    dia_semana: t.cuna_calendario.dia_semana,
-                    slot: t.slot_numero,
-                    estado: t.estado,
-                    partnerName: partnerWorker ? `${partnerWorker.nombre} ${partnerWorker.apellido}` : 'Por asignar'
-                };
-            });
+                    return {
+                        id: t.id,
+                        fecha: t.cuna_calendario.fecha,
+                        dia_semana: t.cuna_calendario.dia_semana,
+                        slot: t.slot_numero,
+                        estado: t.estado,
+                        partnerName: partnerWorker ? `${partnerWorker.nombre} ${partnerWorker.apellido}` : 'Por asignar'
+                    };
+                });
 
             setMyShifts(shifts);
         } catch (err) {
@@ -78,25 +80,25 @@ export default function CunaCalendarioServidora() {
 
     const monthName = currentDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
 
-    if (loading) return <div className="p-8 text-slate-500">Cargando calendario...</div>;
+    if (loading) return <div className="p-8 text-slate-400">Cargando calendario...</div>;
 
     return (
-        <div className="p-4 md:p-8 pt-20 md:pt-8 max-w-4xl mx-auto font-sans text-slate-800">
+        <div className="p-4 md:p-8 pt-20 md:pt-8 max-w-4xl mx-auto font-sans text-slate-200 bg-[#0a192f] min-h-screen">
             <ServidoraHeader />
             {/* ENCABEZADO */}
             <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2 capitalize">
-                        <CalendarIcon className="text-blue-600" />
+                    <h1 className="text-2xl font-bold text-slate-100 flex items-center gap-2 capitalize">
+                        <CalendarIcon className="text-teal-400" />
                         {monthName}
                     </h1>
-                    <p className="text-slate-500 mt-1">
-                        Tienes <strong className="text-blue-600">{myShifts.length} turno(s)</strong> programado(s) este mes.
+                    <p className="text-slate-400 mt-1">
+                        Tienes <strong className="text-teal-400">{myShifts.length} turno(s)</strong> programado(s) este mes.
                     </p>
                 </div>
                 <button
                     onClick={() => navigate('/servidora/intercambios')}
-                    className="px-4 py-2 bg-white border border-slate-300 text-slate-700 font-medium rounded-lg hover:bg-slate-50 hover:border-blue-400 transition-all flex items-center gap-2 shadow-sm"
+                    className="px-4 py-2 bg-[#112240] border border-slate-600 text-slate-300 font-medium rounded-lg hover:bg-white/5 hover:border-teal-400 transition-all flex items-center gap-2 shadow-sm"
                 >
                     <RefreshCw size={16} />
                     Ir a Intercambios
@@ -112,19 +114,19 @@ export default function CunaCalendarioServidora() {
                             className={`
                                 relative overflow-hidden rounded-xl border p-5 transition-all
                                 ${shift.estado === 'solicitud_cambio'
-                                    ? 'bg-amber-50 border-amber-200'
-                                    : 'bg-white border-slate-200 hover:shadow-md'
+                                    ? 'bg-amber-900/20 border-amber-700/50'
+                                    : 'bg-[#112240] border-slate-700 hover:shadow-lg hover:border-teal-500/30'
                                 }
                             `}
                         >
                             {/* Indicador de Estado */}
                             <div className="absolute top-0 right-0 p-3">
                                 {shift.estado === 'solicitud_cambio' ? (
-                                    <span className="bg-amber-100 text-amber-700 text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                                    <span className="bg-amber-900/40 text-amber-400 border border-amber-700/50 text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1">
                                         <RefreshCw size={12} /> Solicitado
                                     </span>
                                 ) : (
-                                    <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                                    <span className="bg-teal-900/30 text-teal-400 border border-teal-700/50 text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1">
                                         <CheckCircle2 size={12} /> Confirmado
                                     </span>
                                 )}
@@ -133,10 +135,10 @@ export default function CunaCalendarioServidora() {
                             <div className="flex flex-col md:flex-row md:items-center gap-6">
                                 {/* Fecha */}
                                 <div className="flex-shrink-0 text-center md:text-left">
-                                    <p className="text-3xl font-black text-slate-800">
+                                    <p className="text-3xl font-black text-slate-100">
                                         {new Date(shift.fecha + 'T00:00:00').getDate()}
                                     </p>
-                                    <p className="text-sm font-bold text-slate-500 uppercase tracking-wider">
+                                    <p className="text-sm font-bold text-slate-400 uppercase tracking-wider">
                                         {new Date(shift.fecha + 'T00:00:00').toLocaleDateString('es-ES', { weekday: 'short' })}
                                     </p>
                                 </div>
@@ -144,7 +146,7 @@ export default function CunaCalendarioServidora() {
                                 {/* Detalles */}
                                 <div className="flex-1 space-y-2">
                                     <div className="flex items-center gap-2">
-                                        <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${shift.dia_semana === 'viernes' ? 'bg-purple-100 text-purple-700' : 'bg-teal-100 text-teal-700'}`}>
+                                        <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${shift.dia_semana === 'viernes' ? 'bg-purple-900/30 text-purple-300' : 'bg-teal-900/30 text-teal-300'}`}>
                                             {shift.dia_semana}
                                         </span>
                                         <span className="text-xs text-slate-400 font-medium">
@@ -152,10 +154,10 @@ export default function CunaCalendarioServidora() {
                                         </span>
                                     </div>
 
-                                    <div className="flex items-center gap-2 text-slate-600">
-                                        <User size={16} className="text-slate-400" />
+                                    <div className="flex items-center gap-2 text-slate-400">
+                                        <User size={16} className="text-slate-500" />
                                         <span className="text-sm">
-                                            Compañera: <strong className="text-slate-800">{shift.partnerName}</strong>
+                                            Compañera: <strong className="text-slate-200">{shift.partnerName}</strong>
                                         </span>
                                     </div>
                                 </div>
@@ -163,10 +165,10 @@ export default function CunaCalendarioServidora() {
                         </div>
                     ))
                 ) : (
-                    <div className="text-center py-12 bg-slate-50 rounded-xl border border-dashed border-slate-300">
-                        <CalendarIcon size={48} className="mx-auto text-slate-300 mb-4" />
-                        <h3 className="text-lg font-medium text-slate-600">Sin turnos este mes</h3>
-                        <p className="text-slate-400 text-sm mt-1">No tienes asignaciones programadas para {monthName}.</p>
+                    <div className="text-center py-12 bg-[#112240] rounded-xl border border-dashed border-slate-700">
+                        <CalendarIcon size={48} className="mx-auto text-slate-600 mb-4" />
+                        <h3 className="text-lg font-medium text-slate-300">Sin turnos este mes</h3>
+                        <p className="text-slate-500 text-sm mt-1">No tienes asignaciones programadas para {monthName}.</p>
                     </div>
                 )}
             </div>
