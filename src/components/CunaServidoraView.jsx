@@ -71,7 +71,7 @@ const ShiftCard = ({ shift, onRequestChange }) => {
 };
 
 // --- MINI CALENDAR COMPONENT ---
-const MiniCalendar = ({ currentDate, events }) => {
+const MiniCalendar = ({ currentDate, events, onPrevMonth, onNextMonth }) => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
 
@@ -105,7 +105,15 @@ const MiniCalendar = ({ currentDate, events }) => {
     return (
         <div className="bg-[#112240] border border-slate-700/50 rounded-xl p-6">
             <div className="flex items-center justify-between mb-4">
-                <h3 className="text-slate-100 font-bold capitalize">{monthName}</h3>
+                <div className="flex items-center gap-2">
+                    <button onClick={onPrevMonth} className="p-1 hover:bg-white/10 rounded-full text-slate-400 hover:text-white transition-colors">
+                        <ChevronRight className="rotate-180" size={16} />
+                    </button>
+                    <h3 className="text-slate-100 font-bold capitalize">{monthName}</h3>
+                    <button onClick={onNextMonth} className="p-1 hover:bg-white/10 rounded-full text-slate-400 hover:text-white transition-colors">
+                        <ChevronRight size={16} />
+                    </button>
+                </div>
                 <div className="flex gap-3 text-[10px]">
                     <div className="flex items-center gap-1">
                         <span className="w-2 h-2 rounded-full bg-teal-500"></span>
@@ -312,6 +320,16 @@ export default function CunaServidoraView() {
         );
     }
 
+    const [displayDate, setDisplayDate] = useState(new Date());
+
+    const handlePrevMonth = () => {
+        setDisplayDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+    };
+
+    const handleNextMonth = () => {
+        setDisplayDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+    };
+
     return (
         <div className="min-h-screen bg-[#0a192f] flex font-sans text-slate-200">
             <ServidoraHeader />
@@ -443,8 +461,10 @@ export default function CunaServidoraView() {
                         <p className="text-sm text-slate-500 mb-4">Puntos verdes son tus turnos, amarillos son oportunidades.</p>
 
                         <MiniCalendar
-                            currentDate={new Date()}
+                            currentDate={displayDate}
                             events={calendarEvents}
+                            onPrevMonth={handlePrevMonth}
+                            onNextMonth={handleNextMonth}
                         />
                     </section>
                 </div>
