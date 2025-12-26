@@ -90,6 +90,7 @@ export default function CunaIntercambiosServidora() {
             `)
             .eq('estado', 'solicitud_cambio')
             .neq('trabajador_id', user.id) // No mis propios turnos
+            .not('trabajador_id', 'is', null) // BLINDAJE: Nunca mostrar slots vacíos sin dueño
             .gte('cuna_calendario.fecha', today)
             .order('cuna_calendario(fecha)', { ascending: true });
 
