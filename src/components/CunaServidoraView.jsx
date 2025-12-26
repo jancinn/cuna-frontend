@@ -176,8 +176,9 @@ export default function CunaServidoraView() {
 
                 // 1. Obtener usuario
                 const { data: { user }, error: authError } = await supabase.auth.getUser();
-                if (authError) throw authError;
-                if (!user) {
+
+                if (authError || !user) {
+                    console.log("No session found, redirecting to login");
                     navigate('/login');
                     return;
                 }
@@ -261,7 +262,31 @@ export default function CunaServidoraView() {
         loadData();
     }, [navigate]);
 
-    // ... (rest of handlers remain the same)
+    const handleRequestChange = async (shiftId) => {
+        if (!confirm('Al solicitar cambio, tu turno se publicará para que otras compañeras lo vean. IMPORTANTE: Sigues siendo responsable del turno hasta que alguien lo tome o la admin lo apruebe. ¿Deseas continuar?')) {
+            return;
+        }
+
+        try {
+            const { error } = await supabase
+                .from('cuna_turnos')
+                .update({ estado: 'solicitud_cambio' })
+                .eq('id', shiftId);
+
+            if (error) throw error;
+
+            alert('Solicitud enviada. Tu turno ahora es visible para intercambio.');
+            window.location.reload();
+        } catch (err) {
+            console.error(err);
+            alert('Error al solicitar cambio');
+        }
+    };
+
+    const handleLogout = async () => {
+        await supabase.auth.signOut();
+        navigate('/login');
+    };
 
     if (loading) {
         return (
