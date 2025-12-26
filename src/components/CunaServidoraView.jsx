@@ -38,8 +38,16 @@ const ShiftCard = ({ shift, onRequestChange }) => {
     const dateStr = dateObj.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     const dayName = dateObj.toLocaleDateString('es-ES', { weekday: 'long' });
 
+    const isExchanging = shift.estado === 'solicitud_cambio';
+
     return (
-        <div className="bg-[#112240] border border-slate-700/50 rounded-xl p-6 shadow-lg mb-4">
+        <div className={`bg-[#112240] border ${isExchanging ? 'border-amber-500/50' : 'border-slate-700/50'} rounded-xl p-6 shadow-lg mb-4 relative overflow-hidden`}>
+            {isExchanging && (
+                <div className="absolute top-0 right-0 bg-amber-500 text-amber-950 text-[10px] font-bold px-2 py-1 rounded-bl-lg">
+                    EN INTERCAMBIO
+                </div>
+            )}
+
             <div className="flex justify-between items-start mb-4">
                 <div>
                     <h3 className="text-lg font-bold text-slate-100 capitalize">{dateStr}</h3>
@@ -52,19 +60,31 @@ const ShiftCard = ({ shift, onRequestChange }) => {
                         <span>Con: {shift.companero || 'Por asignar'}</span>
                     </div>
                 </div>
-                <span className="bg-teal-900/30 text-teal-400 border border-teal-700/50 text-xs font-bold px-3 py-1 rounded-full">
-                    Cuna (0-2)
-                </span>
+                {!isExchanging && (
+                    <span className="bg-teal-900/30 text-teal-400 border border-teal-700/50 text-xs font-bold px-3 py-1 rounded-full">
+                        Cuna (0-2)
+                    </span>
+                )}
             </div>
 
-            <button
-                onClick={() => onRequestChange(shift.id)}
-                className="w-full py-2.5 border border-slate-600 text-slate-300 font-medium rounded-lg hover:bg-white/5 transition-colors"
-            >
-                Solicitar cambio
-            </button>
+            {isExchanging ? (
+                <div className="bg-amber-900/20 border border-amber-500/30 rounded-lg p-3 text-center mb-2">
+                    <p className="text-amber-400 text-sm font-bold">Solicitud Activa</p>
+                    <p className="text-amber-200/70 text-xs">Esperando que alguien tome el turno.</p>
+                </div>
+            ) : (
+                <button
+                    onClick={() => onRequestChange(shift.id)}
+                    className="w-full py-2.5 border border-slate-600 text-slate-300 font-medium rounded-lg hover:bg-white/5 transition-colors"
+                >
+                    Solicitar cambio
+                </button>
+            )}
+
             <p className="text-xs text-slate-500 text-center mt-3 px-4">
-                Al solicitar cambio, tu turno se publicará para que otras compañeras lo vean. Sigues siendo responsable hasta que alguien lo tome.
+                {isExchanging
+                    ? "Sigues siendo responsable hasta que se confirme el cambio."
+                    : "Al solicitar cambio, tu turno se publicará para que otras compañeras lo vean."}
             </p>
         </div>
     );
@@ -238,8 +258,8 @@ export default function CunaServidoraView() {
                     calendarData.forEach(day => {
                         if (!day.cuna_turnos) return; // Skip si no hay turnos array
 
-                        // Buscar mi turno
-                        const myTurn = day.cuna_turnos.find(t => t.trabajador_id === user.id && (t.estado === 'asignado' || t.estado === 'confirmado'));
+                        // Buscar mi turno (incluyendo los que están en intercambio porque sigo siendo responsable)
+                        const myTurn = day.cuna_turnos.find(t => t.trabajador_id === user.id && (t.estado === 'asignado' || t.estado === 'confirmado' || t.estado === 'solicitud_cambio'));
 
                         // Buscar oportunidades (solicitudes de cambio de otros)
                         const opportunity = day.cuna_turnos.find(t => t.estado === 'solicitud_cambio' && t.trabajador_id !== user.id);
@@ -248,8 +268,12 @@ export default function CunaServidoraView() {
                             myShifts.push({
                                 id: myTurn.id,
                                 fecha: day.fecha,
-                                companero: "Compañera de equipo"
+                                companero: "Compañera de equipo",
+                                estado: myTurn.estado // Pasamos el estado para la UI
                             });
+                            // Si es mío y está en solicitud, lo pinto diferente o igual? 
+                            // El usuario quiere verlo. Lo pintamos como 'mine' pero quizás con otro matiz en el futuro.
+                            // Por ahora 'mine' asegura que salga verde en el calendario.
                             eventsMap[day.fecha] = 'mine';
                         } else if (opportunity) {
                             eventsMap[day.fecha] = 'available';
